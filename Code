@@ -1,0 +1,338 @@
+### ~\\\ Welcome to Mergesort in MIPS! ///~ ###
+## 	This program attempts to recreate CS 281's HW 1 (without execution time and limit on printing the array).
+##		This program...
+##			- Asks the user how big of an array they would like to sort.
+## 			- Makes array based on users input with random numbers from 0 to size of array -1
+##			- Uses MergeSort to sort array made with random numbers!
+##	Final Project - Mergesort in MIPS
+##	Professor Smith
+##	CSCI 281 Assembly and Computer Arch
+##	Ana-Lea Nishiyama
+##	12/13/2018
+### ~\\\ Welcome to Mergesort in MIPS! ///~ ###
+
+.data
+	.align 2
+	welcome:		.asciiz "Hello! How many numbers would you like to sort?\n" 
+	randomNum:		.asciiz "Random number generated~\n"
+	numberInputed:		.asciiz "Making random array of "
+	nums:			.asciiz " integers...\n"
+	newLine:		.asciiz "\n"
+	comma:			.asciiz ", "
+	sorting:		.asciiz "\nSorting array..."
+	done:			.asciiz "\nComplete!"
+	sumUnSort:		.asciiz "\nSum of un-sorted array: "
+	sumSorted:		.asciiz "\nSum of sorted array: "
+	
+	constant: 			.word 0
+	
+.text
+
+##MainMethod
+# asks user to ener a number for the size of array to create,
+# fills array with random number then sorts it using mergesort
+#
+# Size of Array			--- $s0 
+# Address of Array		--- $s1 
+##
+main:
+
+	li	$v0, 4
+	la	$a0, welcome
+	syscall				#"Hello! How many numbers would you like to sort?\n" 
+	
+	li	$v0, 5
+	syscall
+	add	$s0, $v0, $zero		#Gets size from user, stores it into $s0
+	
+	li	$v0, 4
+	la	$a0, numberInputed	#"Making random array of "
+	syscall
+	
+	li	$v0, 1
+	move	$a0, $s0		#user inputed number
+	syscall
+	
+	li	$v0, 4
+	la	$a0, nums		#"integers..."
+	syscall	
+
+	move	$a0, $s0		#args Length of Array	
+	jal	makeArray
+	move	$s1, $v0		#returned Address of Array
+	
+	move	$a0, $s0		#args Length of Array 
+	move	$a1, $s1		#args Address of Array
+	jal	printArray
+	add	$s5, $s5, $v0		#move sum of unsorted array elements into $s5
+	
+	move	$a0, $s1		#Start address(same as address)
+	move	$a3, $a0		#address
+	
+	sll	$t0, $s0, 2		#get off set of end address
+	add	$a1, $t0, $s1		#End address 
+	
+	jal	divide
+
+	li	$v0, 4			#"\n"
+	la	$a0, newLine
+	syscall
+	
+	move	$a0, $s0		#args Length of Array 
+	move	$a1, $s1		#args Address of Array
+	jal	printArray
+	add	$s6, $s6, $v0		#move sum of sorted array elements into $s6
+	
+	li	$v0, 4
+	la	$a0, done		#"Complete!"
+	syscall
+	
+	li	$a0, 0
+	
+	li	$v0, 4
+	la	$a0, sumUnSort  ##"\nSum of un-sorted array: "
+	syscall	
+	
+	li	$v0, 1
+	move	$a0, $s5		#unsorted Array
+	syscall
+	
+	li	$v0, 4
+	la,	$a0, sumSorted  ##"\nSum of sorted array: "
+	syscall	
+	
+	li	$v0, 1
+	move	$a0, $s6		#Sorted Array
+	syscall
+	
+	j	exit
+  
+ #end of main method!!
+
+##
+# Make array filled with random numbers
+#
+# @param	$a0,	length of array
+# @return $v0, 	address of array
+##
+makeArray:
+
+### Variables ###
+	# size - 1		--- $t0
+	# iterator		--- $t1
+	# Address of array	--- $t2
+	# size of array		--- $t4
+	
+##	Allocate memory for array
+	add	$t4, $a0, $zero	#move size of array into $t4
+	
+	li	$v0, 9		#allocate memory through the heap
+	sll	$a0, $t4, 2	#Size * int gives the number of bits needed to accomodate for the numbers we want to hold
+	syscall
+	move	$t2, $v0	#move the address of the newly created array into $t2
+
+##	Fill the array with random numbers
+	li	$t1, 0		#initialize iterator
+	addi	$t0, $s0, -1	#initialize size -1
+	
+start_loop:
+	
+	bgt	$t1, $t0, exit_loop	#if iterator > size-1, branch
+	
+	#get index
+	sll	$t3, $t1, 2		#index * 4 gives offset of the address -- stored in $t3
+	addu	$t3, $t3, $t2		#offset + address = address of $t3.
+			
+	#fill with random number
+	move	$a1, $t0	 	#random numbers from 0 to size - 1,
+	li	$v0, 42	
+	syscall
+	
+	sw	$a0, ($t3)		#stores the random number found in a0, into the address found at $t3
+		
+	addi	$t1, $t1, 1		#index++
+	
+	j	start_loop	
+	
+exit_loop:	
+	move	$v0, $t2		#return address of array made thorugh the heap.
+	jr	$ra
+	
+
+##
+# Prints elements in Array
+#
+#@param	$a0, 	length of array
+#@param	$a1, 	address of array
+#@return $v0,	sum off all elements in array, this is used to make sure that all elements in array are the same!
+##
+printArray:
+	### Variables ###
+	# size - 1		--- $t0
+	# iterator		--- $t1
+	# address of array	--- $t2
+	# size of array		--- $t4
+	# sum of all elements	--- $t5
+	
+	li	$t1, 0			#reset iterator
+	li	$t5, 0			#make sure $t5 is 0!
+	addi	$t0, $a0, -1		#initialize size -1
+	add	$t2, $a1, $zero		#address of array
+	add	$t6, $a0, $zero		#size
+	
+B_loop:
+	bgt	$t1, $t0, e_loop	#check
+	
+	sll	$t3, $t1, 2		#get offset of index
+	addu	$t3, $t3, $t2		#get address of element at index via offset + address of array
+
+	li	$v0, 1			#going to print a number
+	lw	$t4, ($t3)	
+	move	$a0, $t4
+	syscall
+	
+	add	$t5, $t5, $a0		#sum of elements
+	
+	li	$v0, 4			#", "
+	la	$a0, comma
+	syscall
+	
+	addi	$t1, $t1, 1		#index++
+	
+	j	B_loop 
+		
+e_loop:
+	move	$v0, $t5		#return sum of all elements
+	jr	$ra
+		
+## 
+# Void method of Mergesort()
+#
+#@param $a0	--- Start Address
+#@param $a1	--- End Address
+#@param $a2	--- Midpoint Address
+#@param $a3	--- Original Address
+##
+divide:
+
+### Variables ###
+	# Return Address	--- $ra	--- 0(sp)
+	# Start			--- $a0 --- 4(sp)
+	# End			--- $a1 --- 8(sp)
+	# Original Address	--- $a3 --- 16(sp)
+	# Middle		--- 	--- 12(sp)
+	# Number of elements	--- $t0
+	
+ 	addi	$sp, $sp, -20		
+	sw	$ra, 0($sp)		
+	sw	$a0, 4($sp)		
+	sw	$a1, 8($sp)		
+	sw	$a3, 16($sp)		
+	
+		
+	sub 	$t5, $a1, $a0		# (end - start) if 4, then there is only one element
+	
+ 	ble	$t5, 4, baseCase	# if $t0 == 4 then single element, base case! Return!
+	
+## 	get (start - address)/4 and (end - address),/4 convert addresses into indexes. We are getting hte index so we may get the midpoint. 
+## If we find the midpoint through the address of start and end, then we could be risking returning a number not divisble by four (which is an invalid address).
+## 	Therefore by dividing the index of the sum of start and index by 2, then finding its offset of the midpoint's index, it will ensure the address we get for the midpoint will be divisable by four!
+
+	sub	$t1, $a0, $a3		#Offset of start
+	srl	$t1, $t1, 2 		#Offset/4 give the index, $t1 = start index
+	
+	sub	$t2, $a1, $a3		#Offset of end
+	srl	$t2, $t2, 2		#index of end, $t2 = start index
+
+	add	$t1, $t1, $t2		#start index + end index
+	srl	$t1, $t1, 1		#(start index + end index)/2 = middle index
+	
+	sll	$t1, $t1, 2		#Offset of Middle index, (midpoint * 4)
+	add	$a1, $a3, $t1 		#Original address of array + offset middle == address of the midpoint!!
+	sw	$a1, 12($sp)		#store address of midpoint into a1, midpoint is now the end address for the smaller arrays
+	
+	
+	jal	divide			#divide first half of the array
+	
+	lw	$a0, 12($sp)		#Load the middle address, middle = start
+	lw	$a1, 8($sp)		#Load the end address, end = end
+	
+	jal	divide			#divide second half of the array
+	
+	lw	$a0, 4($sp)		#closing block
+	lw	$a1, 12($sp)		
+	lw	$a2, 8($sp)		
+	
+	jal	mergeSort		#MERGE!!!
+	
+	
+baseCase:				
+ 	lw	$ra, 0($sp)		#Load return address
+	addi	$sp, $sp, 20		#Put eggs back into basket
+	jr	$ra			#Return 
+	
+mergeSort:
+##
+#Return Address
+#Start Address		--- $a0 4($sp)
+#MidPoint Address	--- $a1 8($sp)
+#End Address 		--- $a2 12($sp)
+
+	addi	$sp, $sp, -20		
+	sw	$ra, 0($sp)		#return address
+	sw	$a0, 4($sp)		#start address
+	sw	$a1, 8($sp)		#midpoint address
+	sw	$a2, 12($sp)		#end address
+	sw	$a3, 16($sp)		#original Address
+	
+	add	$s3, $a0, $zero		#Copy first part of the array in $s3 (its still the whole array though)
+	add	$s4, $a1, $zero		#Copy second half of the array in $s4 (this is )
+	
+compareElements:
+
+ 	lw	$t0, 0($s3)		#gets first element in the first half of the array. Element is stored in $t0
+	lw	$t1, 0($s4)		#gets first element in the seconded half of the array. Element is stored in $t1
+		
+	
+	ble	$t0, $t1, doNothing	#If the element in the first half of the array is less than the second. Cool, that os how its supposed to be. 
+	
+	
+##	$t1 > $t0
+	add	$t5, $s4, $zero		#to keep our place in the array before going into loop (t5 = second half of the array)
+	add	$t9, $s3, $zero		#t9 = first half of the array
+	
+switch:
+	ble	$t5, $t9, sortDone	#If second array is empty then it's done, or in other words, if the 2nd array's index (address) equals 1st array's index (address) then we are done sorting!
+	addi	$t6, $t5, -4		#previous address in the array
+
+	lw	$t7, 0($t5)		#Get element
+	lw	$t8, 0($t6)		#Get previous element
+
+	sw	$t7, 0($t6)		#Swap elements! We swap elements because t0 (element in first array)is more than t1 (second array),
+	sw	$t8, 0($t5)
+
+	addi	$t5, $t5, -4		# since we are going back from the second array to the first, well need to decrement t5
+	
+	j 	switch			#swap until second array is empty
+	
+sortDone:				#get out of loop
+
+	addi	$s4, $s4, 4		#second half index ++ (increment by 4 becuase it is and address)
+	
+doNothing:
+	addi	$s3, $s3, 4		#first half index ++
+	
+	lw	$a2, 12($sp)		#Reload the end address
+	bge	$s3, $a2, sectionDone	#End the loop when first half intersects with secondhalf of the array
+	bge	$s4, $a2, sectionDone	#End the loop when secondhalf is at the end of its section
+	j	compareElements
+	
+sectionDone:
+	
+	lw	$ra, 0($sp)		#Load the return address
+	addi	$sp, $sp, 20		#Adjust the stack pointer
+	jr 	$ra			#Return	
+
+exit:
+	li	$v0, 10
+	syscall
