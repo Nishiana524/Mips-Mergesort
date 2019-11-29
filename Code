@@ -2,9 +2,9 @@
 ## 	This program attempts to recreate CS 281's HW 1 (without execution time and limit on printing the array).
 ##		This program...
 ##			- Asks the user how big of an array they would like to sort.
-## 			- Makes array based on users input with random numbers from 0 to size of array -1
-##			- Uses MergeSort to sort array made with random numbers!
-##	Final Project - Mergesort in MIPS
+## 			- Fills an array filled with random numbers.
+##			- sorts array via mergeSort!
+##	Final Project
 ##	Professor Smith
 ##	CSCI 281 Assembly and Computer Arch
 ##	Ana N.
@@ -28,8 +28,8 @@
 	
 .text
 
-##MainMethod
-# asks user to ener a number for the size of array to create,
+## MainMethod
+# Asks user how big of an array they would like to create
 # fills array with random number then sorts it using mergesort
 #
 # Size of Array			--- $s0 
@@ -43,7 +43,7 @@ main:
 	
 	li	$v0, 5
 	syscall
-	add	$s0, $v0, $zero		#Gets size from user, stores it into $s0
+	add	$s0, $v0, $zero		#Gets size from user, store it into $s0
 	
 	li	$v0, 4
 	la	$a0, numberInputed	#"Making random array of "
@@ -107,7 +107,7 @@ main:
 	
 	j	exit
   
- #end of main method!!
+#end of main method!!
 
 ##
 # Make array filled with random numbers
@@ -126,7 +126,7 @@ makeArray:
 ##	Allocate memory for array
 	add	$t4, $a0, $zero	#move size of array into $t4
 	
-	li	$v0, 9		#allocate memory through the heap
+	li	$v0, 9		#allocate memory through the Heap
 	sll	$a0, $t4, 2	#Size * int gives the number of bits needed to accomodate for the numbers we want to hold
 	syscall
 	move	$t2, $v0	#move the address of the newly created array into $t2
@@ -234,9 +234,9 @@ divide:
 	
  	ble	$t5, 4, baseCase	# if $t0 == 4 then single element, base case! Return!
 	
-## 	get (start - address)/4 and (end - address),/4 convert addresses into indexes. We are getting hte index so we may get the midpoint. 
-## If we find the midpoint through the address of start and end, then we could be risking returning a number not divisble by four (which is an invalid address).
-## 	Therefore by dividing the index of the sum of start and index by 2, then finding its offset of the midpoint's index, it will ensure the address we get for the midpoint will be divisable by four!
+## 	get (start - address)/4 and (end - address),/4 convert addresses into indexes. We are getting the index so we may get the midpoint. 
+## If we find the midpoint through the address of start and end, then we could be risking returning a number not divisble by four (which is an invalid address). Uh Oh!
+## 	Therefore by dividing the index of the sum of start and index by 2, then finding its offset of the midpoint's index, it will ensure the address we get for the midpoint will be a vailid address!
 
 	sub	$t1, $a0, $a3		#Offset of start
 	srl	$t1, $t1, 2 		#Offset/4 give the index, $t1 = start index
