@@ -1,6 +1,6 @@
 Final Project  
 Professor Smith  
-CSCI 281 Assembly and Computer Architecture
+CSCI 281 Assembly and Computer Architecture  
 Ana-Lea N.  
 12/13/2018  
 
